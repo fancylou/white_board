@@ -1,5 +1,7 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'wp_painter.dart';
+import 'color_picker.dart';
 
 void main() => runApp(MyApp());
 
@@ -21,200 +23,230 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<WPPainter> _points = <WPPainter>[];
-  Color _paintColor = materialColors[0];
-  Color _tempChooseColor = materialColors[0];
+  Color _paintColor = redColor;
   double _paintStokeWidth = 1.0;
+  double _bottomBarLeft = 44.0;
+  var lastOr;
+
+
+
+  ///旋转屏幕的时候转换位置
+  void rotationPoints(Orientation current, Size size) {
+    if (lastOr != null) {
+      if (lastOr != current && _points!=null) {
+        var newHeight = size.height;
+        var newWidth = size.width;
+        for(var i=0;i<_points.length;i++) {
+          var p = _points[i];
+          if (p == null) {
+            continue;
+          }
+          var old = p.point;
+          //这个有问题
+          //往左旋转 x：（newWidth - oldY） y:(oldX)
+          //往右旋转 x：（oldY） y：（newHeight - oldX）
+          //上下颠倒：x:(newWidth - oldX) y:(newHeight - oldY)
+          p.point = Offset((newWidth - old.dy), (newHeight - old.dx));
+        }
+      }
+    }
+    lastOr = current;
+  }
+
+
   @override
   Widget build(BuildContext context) {
     var size = MediaQuery.of(context).size;
-    double center = (size.width - 48) / 2;
     return CupertinoPageScaffold(
-      child: Container(
-        constraints: BoxConstraints.expand(),
-        child: Stack(
-          children: <Widget>[
-            GestureDetector(
-              child: CustomPaint(
-                size: size,
-                painter: _MyPainter(_points),
-              ),
-              onPanUpdate: (detail) {
-                RenderBox referenceBox = context.findRenderObject();
-                Offset localPosition =
-                    referenceBox.globalToLocal(detail.globalPosition);
+      child: OrientationBuilder(
+        builder: (context, orientation) {
 
-                setState(() {
-                  _points = new List.from(_points)
-                    ..add(WPPainter(
-                        localPosition, _paintColor, _paintStokeWidth));
-                });
-              },
-              onPanEnd: (detail) => _points.add(null),
-            ),
-            Positioned(
-              bottom: 44,
-              left: center,
-              child: GestureDetector(
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                      color: _paintColor,
-                      borderRadius: BorderRadius.all(Radius.circular(24))),
+          if (orientation == Orientation.portrait) {
+            _bottomBarLeft = 16.0;
+          } else {
+            _bottomBarLeft = 44.0;
+          }
+          Color color3 = materialColors[0];
+          if (_paintColor.value != blackColor.value &&
+              _paintColor.value != redColor.value) {
+            color3 = _paintColor;
+          }
+          rotationPoints(orientation, size);
+          return Container(
+            constraints: BoxConstraints.expand(),
+            child: Stack(
+              children: <Widget>[
+                GestureDetector(
+                  child: CustomPaint(
+                    size: size,
+                    painter: _MyPainter(_points),
+                  ),
+                  onPanUpdate: (detail) {
+                    RenderBox referenceBox = context.findRenderObject();
+                    Offset localPosition =
+                        referenceBox.globalToLocal(detail.globalPosition);
+
+                    setState(() {
+                      _points = new List.from(_points)
+                        ..add(WPPainter(
+                            localPosition, _paintColor, _paintStokeWidth));
+                    });
+                  },
+                  onPanEnd: (detail) => _points.add(null),
                 ),
-                onTap: _changeColor,
-              ),
-            )
-          ],
-        ),
+                //黑色按钮
+                bottomCircleColorButton(blackColor, 0),
+                //红色按钮
+                bottomCircleColorButton(redColor, 1),
+                //其他颜色
+                bottomCircleColorButton(color3, 2),
+                //画笔大小
+                bottomPencilWidthButton(0),
+                bottomPencilWidthButton(1),
+                bottomPencilWidthButton(2),
+                bottomPencilWidthButton(3),
+                bottomPencilWidthButton(4),
+                bottomPencilWidthButton(5),
+              ],
+            ),
+          );
+        },
       ),
       // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 
-  void _changeColor() {
-    _tempChooseColor = _paintColor;
-    showCupertinoDialog(
-      context: context,
-      builder: (_) {
-        return CupertinoAlertDialog(
-          title: Text("选择颜色"),
-          content: ColorChooseWidget((color) {
-            _tempChooseColor = color;
-          }, _paintColor),
-          actions: <Widget>[
-            CupertinoDialogAction(
-              child: Text('取消'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            CupertinoDialogAction(
-              child: Text('确定'),
-              isDefaultAction: true,
-              onPressed: () {
-                _setPaintColor(_tempChooseColor);
-                Navigator.of(context).pop();
-              },
-            )
-          ],
-        );
-      },
+  ///
+  /// @param color 按钮颜色
+  /// @param index 第一个黑色 第二个红色 第三个选择
+  ///
+  Widget bottomCircleColorButton(Color color, int index) {
+    double left = _bottomBarLeft + index * 48 + 10 * index;
+    return Positioned(
+      bottom: 44,
+      left: left,
+      child: GestureDetector(
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+              color: color,
+              boxShadow: _paintColor.value == color.value
+                  ? [
+                      BoxShadow(
+                        color: Color(0xFF8E8E93),
+                        spreadRadius: 2.0,
+                      ),
+                    ]
+                  : [],
+              borderRadius: BorderRadius.all(Radius.circular(24))),
+        ),
+        onTap: () {
+          if (index == 0) {
+            _setPaintColor(blackColor);
+          } else if (index == 1) {
+            _setPaintColor(redColor);
+          } else {
+            _pickerColor();
+          }
+        },
+      ),
     );
   }
 
+  ///
+  /// 笔尖大小
+  ///
+  Widget bottomPencilWidthButton(int index) {
+    double left = _bottomBarLeft + (3 + index) * 48 + 5 * (3 + index) + 20;
+
+    double size = 12.0 + (index * 3);
+    double bottom = 44.0 + (48.0 - size) / 2;
+    bool isChecked = false;
+    switch (index) {
+      case 0:
+        if (_paintStokeWidth == 1.0) {
+          isChecked = true;
+        }
+        break;
+      case 1:
+        if (_paintStokeWidth == 2.0) {
+          isChecked = true;
+        }
+        break;
+      case 2:
+        if (_paintStokeWidth == 3.0) {
+          isChecked = true;
+        }
+        break;
+      case 3:
+        if (_paintStokeWidth == 6.0) {
+          isChecked = true;
+        }
+        break;
+      case 4:
+        if (_paintStokeWidth == 9.0) {
+          isChecked = true;
+        }
+        break;
+      case 5:
+        if (_paintStokeWidth == 12.0) {
+          isChecked = true;
+        }
+        break;
+    }
+    return Positioned(
+      bottom: bottom,
+      left: left,
+      child: GestureDetector(
+        child: Container(
+          width: size,
+          height: size,
+          decoration: ShapeDecoration(
+              shape:
+                  CircleBorder(side: BorderSide(width: isChecked ? 4.0 : 1.0))),
+        ),
+        onTap: () {
+          switch (index) {
+            case 0:
+              _paintStokeWidth = 1.0;
+              break;
+            case 1:
+              _paintStokeWidth = 2.0;
+              break;
+            case 2:
+              _paintStokeWidth = 3.0;
+              break;
+            case 3:
+              _paintStokeWidth = 6.0;
+              break;
+            case 4:
+              _paintStokeWidth = 9.0;
+              break;
+            case 5:
+              _paintStokeWidth = 12.0;
+              break;
+          }
+          setState(() {});
+        },
+      ),
+    );
+  }
+
+  ///打开颜色选择器
+  void _pickerColor() {
+    showColorPicker(context, _paintColor, (color) {
+      _setPaintColor(color);
+    });
+  }
+
+  ///设置颜色
   void _setPaintColor(color) {
     if (color != null) {
       setState(() {
         _paintColor = color;
       });
     }
-  }
-}
-
-const List<Color> materialColors = const <Color>[
-  Color(0xFFF44336),
-  Color(0xFFE91E63),
-  Color(0xFF9C27B0),
-  Color(0xFF673AB7),
-  Color(0xFF3F51B5),
-  Color(0xFF2196F3),
-  Color(0xFF03A9F4),
-  Color(0xFF00BCD4),
-  Color(0xFF009688),
-  Color(0xFF4CAF50),
-  Color(0xFF8BC34A),
-  Color(0xFFCDDC39),
-  Color(0xFFFFEB3B),
-  Color(0xFFFFC107),
-  Color(0xFFFF9800),
-  Color(0xFFFF5722),
-  Color(0xFF795548),
-  Color(0xFF9E9E9E),
-  Color(0xFF607D8B),
-  Color(0xFF000000),
-];
-
-class ColorChooseWidget extends StatefulWidget {
-  final ValueChanged<Color> onColorChange;
-  final Color selectedColor;
-  ColorChooseWidget(this.onColorChange, this.selectedColor);
-
-  @override
-  State<StatefulWidget> createState() {
-    return _ColorChooseWidgetState();
-  }
-}
-
-class _ColorChooseWidgetState extends State<ColorChooseWidget> {
-  static const double _kPadding = 9.0;
-  static const double _kContainerPadding = 16.0;
-  static const double _kCircleColorSize = 60.0;
-  Color _selectedColor = materialColors[0];
-
-  @override
-  void initState() {
-    _selectedColor =
-        widget.selectedColor == null ? materialColors[0] : widget.selectedColor;
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Size size = MediaQuery.of(context).size ;
-    final int crossCount = ((270 - _kContainerPadding * 2) / (_kCircleColorSize + _kPadding)).floor();
-    print("crosscount: "+crossCount.toString());
-    final int row = (materialColors.length / crossCount).floor();
-    print("row:"+row.toString());
-    double height = (_kCircleColorSize + _kPadding) * row + _kContainerPadding * 2;
-    if (height > size.height * 0.7 ) {
-      height = size.height * .7;
-    }
-    print("height:"+height.toString());
-    return Container(
-        width: 270,
-        height: height,
-        child: GridView.count(
-          padding: const EdgeInsets.all(_kContainerPadding),
-          crossAxisSpacing: _kPadding,
-          mainAxisSpacing: _kPadding,
-          crossAxisCount: crossCount,
-          childAspectRatio: 1.0,
-          children: _buildListMainColor(materialColors),
-        ));
-  }
-
-  List<Widget> _buildListMainColor(List<Color> colors) {
-    List<Widget> circles = [];
-    for (final color in colors) {
-      final isSelected = _selectedColor.value == color.value;
-      circles.add(_circleColor(color, isSelected));
-    }
-    return circles;
-  }
-
-  Widget _circleColor(Color color, bool isSelected) {
-    return GestureDetector(
-        onTap: () => _onColorSelected(color),
-        child: Container(
-          width: _kCircleColorSize,
-          height: _kCircleColorSize,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.all(Radius.circular(_kCircleColorSize/2))),
-          child: isSelected ? Icon(CupertinoIcons.check_mark, size: _kCircleColorSize*0.7,) : null,
-        ));
-  }
-
-  void _onColorSelected(Color color) {
-    print("onmain color change " + color.toString());
-    if (widget.onColorChange != null) {
-      widget.onColorChange(color);
-    }
-    setState(() {
-      _selectedColor = color;
-    });
   }
 }
 
