@@ -1,12 +1,10 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart';
 import 'wp_painter.dart';
 import 'color_picker.dart';
 
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return CupertinoApp(
@@ -23,35 +21,35 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   List<WPPainter> _points = <WPPainter>[];
-  Color _paintColor = redColor;
+  Color _paintColor = blackColor;
   double _paintStokeWidth = 1.0;
   double _bottomBarLeft = 44.0;
-  var lastOr;
+//  var lastOr;
 
 
 
   ///旋转屏幕的时候转换位置
-  void rotationPoints(Orientation current, Size size) {
-    if (lastOr != null) {
-      if (lastOr != current && _points!=null) {
-        var newHeight = size.height;
-        var newWidth = size.width;
-        for(var i=0;i<_points.length;i++) {
-          var p = _points[i];
-          if (p == null) {
-            continue;
-          }
-          var old = p.point;
-          //这个有问题
-          //往左旋转 x：（newWidth - oldY） y:(oldX)
-          //往右旋转 x：（oldY） y：（newHeight - oldX）
-          //上下颠倒：x:(newWidth - oldX) y:(newHeight - oldY)
-          p.point = Offset((newWidth - old.dy), (newHeight - old.dx));
-        }
-      }
-    }
-    lastOr = current;
-  }
+//  void rotationPoints(Orientation current, Size size) {
+//    if (lastOr != null) {
+//      if (lastOr != current && _points!=null) {
+//        var newHeight = size.height;
+//        var newWidth = size.width;
+//        for(var i=0;i<_points.length;i++) {
+//          var p = _points[i];
+//          if (p == null) {
+//            continue;
+//          }
+//          var old = p.point;
+//          //todo 这个有问题
+//          //往左旋转 x：（newWidth - oldY） y:(oldX)
+//          //往右旋转 x：（oldY） y：（newHeight - oldX）
+//          //上下颠倒：x:(newWidth - oldX) y:(newHeight - oldY)
+//          p.point = Offset((newWidth - old.dy), (newHeight - old.dx));
+//        }
+//      }
+//    }
+//    lastOr = current;
+//  }
 
 
   @override
@@ -60,7 +58,6 @@ class _MyHomePageState extends State<MyHomePage> {
     return CupertinoPageScaffold(
       child: OrientationBuilder(
         builder: (context, orientation) {
-
           if (orientation == Orientation.portrait) {
             _bottomBarLeft = 16.0;
           } else {
@@ -71,7 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
               _paintColor.value != redColor.value) {
             color3 = _paintColor;
           }
-          rotationPoints(orientation, size);
+//          rotationPoints(orientation, size);
           return Container(
             constraints: BoxConstraints.expand(),
             child: Stack(
@@ -159,7 +156,6 @@ class _MyHomePageState extends State<MyHomePage> {
   ///
   Widget bottomPencilWidthButton(int index) {
     double left = _bottomBarLeft + (3 + index) * 48 + 5 * (3 + index) + 20;
-
     double size = 12.0 + (index * 3);
     double bottom = 44.0 + (48.0 - size) / 2;
     bool isChecked = false;
@@ -204,7 +200,8 @@ class _MyHomePageState extends State<MyHomePage> {
           height: size,
           decoration: ShapeDecoration(
               shape:
-                  CircleBorder(side: BorderSide(width: isChecked ? 4.0 : 1.0))),
+                  CircleBorder(side: BorderSide(width: isChecked ? 4.0 : 1.0))
+          ),
         ),
         onTap: () {
           switch (index) {

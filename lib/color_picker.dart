@@ -34,9 +34,11 @@ void showColorPicker(BuildContext context, Color selectedColor, ValueChanged<Col
   );
 }
 
+//黑色
 Color blackColor = Color(0xFF000000);
+//红色
 Color redColor = Color(0xFFFF3B30);
-
+//颜色选择列表
 const List<Color> materialColors = const <Color>[
   Color(0xFFE91E63),
   Color(0xFF9C27B0),
@@ -58,6 +60,8 @@ const List<Color> materialColors = const <Color>[
   Color(0xFF607D8B),
 ];
 
+
+//颜色选择Widget
 class ColorChooseWidget extends StatefulWidget {
   final ValueChanged<Color> onColorChange;
   final Color selectedColor;
@@ -87,14 +91,11 @@ class _ColorChooseWidgetState extends State<ColorChooseWidget> {
     final Size size = MediaQuery.of(context).size ;
     // 270 是 CupertinoAlertDialog 固定的宽度
     final int crossCount = ((270 - _kContainerPadding * 2) / (_kCircleColorSize + _kPadding)).floor();
-    print("crosscount: "+crossCount.toString());
     final int row = (materialColors.length / crossCount).floor();
-    print("row:"+row.toString());
     double height = (_kCircleColorSize + _kPadding) * row + _kContainerPadding * 2;
     if (height > size.height * 0.7 ) {
       height = size.height * .7;
     }
-    print("height:"+height.toString());
     return Container(
         width: 270,
         height: height,
@@ -132,7 +133,6 @@ class _ColorChooseWidgetState extends State<ColorChooseWidget> {
   }
 
   void _onColorSelected(Color color) {
-    print("on color change " + color.toString());
     if (widget.onColorChange != null) {
       widget.onColorChange(color);
     }
